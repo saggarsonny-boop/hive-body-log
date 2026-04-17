@@ -122,13 +122,17 @@ function AccountSetupOverlay({ sessionId, onDone, onSkip }: { sessionId: string;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), session_id: sessionId }),
       })
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error()
       localStorage.setItem('hbl_email', email.trim())
       localStorage.setItem('hbl_email_prompted', '1')
+      // email_sent:false means link saved but email not sent yet — still treat as success
       setState('sent')
-      setTimeout(() => onDone(email.trim()), 2000)
+      setTimeout(() => onDone(email.trim()), data.email_sent === false ? 800 : 2000)
     } catch {
       setState('error')
+      // Auto-skip after 3s so a broken email config never blocks entry saving
+      setTimeout(() => onSkip(), 3000)
     }
   }
 
@@ -176,7 +180,7 @@ function AccountSetupOverlay({ sessionId, onDone, onSkip }: { sessionId: string;
               >
                 {state === 'sending' ? 'Sending…' : 'Protect my story'}
               </button>
-              {state === 'error' && <p className="text-amber-600 text-xs text-center">We&apos;re still setting up email delivery — try again in a few hours.</p>}
+              {state === 'error' && <p className="text-amber-600 text-xs text-center">Email not available yet — taking you to your story now.</p>}
             </div>
 
             <button
