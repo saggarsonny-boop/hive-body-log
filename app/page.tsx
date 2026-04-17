@@ -199,6 +199,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<Tab>('log')
   const [entryMode, setEntryMode] = useState<EntryMode>('type')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'processing' | 'done' | 'error'>('idle')
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -349,7 +350,7 @@ function App() {
 
   async function handleEntrySubmit(text: string, tags: string[], intensity: number | null, timeOfDay: string | null, supplementImage: string | null) {
     if (!sessionId) return
-    setIsSubmitting(true); setLastResponse(null)
+    setIsSubmitting(true); setLastResponse(null); setSubmitError(null)
     try {
       const res = await fetch('/api/entries', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -362,8 +363,13 @@ function App() {
         if (tags.includes('Medication')) {
           setShowReminderPrompt(text.slice(0, 60))
         }
+      } else {
+        const errData = await res.json().catch(() => ({}))
+        setSubmitError(errData.error || 'Something went wrong. Please try again.')
       }
-    } catch {}
+    } catch {
+      setSubmitError('Could not reach the server. Check your connection and try again.')
+    }
     setIsSubmitting(false)
   }
 
@@ -685,6 +691,12 @@ function App() {
             </div>
           )}
         </div>
+
+        {submitError && (
+          <div className="bg-red-950 border border-red-900 rounded-xl p-4">
+            <p className="text-red-400 text-sm">{submitError}</p>
+          </div>
+        )}
 
         {lastResponse && <AIResponseCard response={lastResponse} onDismiss={() => setLastResponse(null)} />}
 

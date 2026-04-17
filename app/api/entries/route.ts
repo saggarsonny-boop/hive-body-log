@@ -19,6 +19,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    if (!process.env.DATABASE_URL) {
+      console.error('POST /api/entries: DATABASE_URL not set')
+      return NextResponse.json({ error: 'Database not configured' }, { status: 503 })
+    }
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error('POST /api/entries: ANTHROPIC_API_KEY not set')
+      return NextResponse.json({ error: 'AI service not configured' }, { status: 503 })
+    }
+
     await ensureSession(session_id)
 
     const aiResponse = await processEntry(raw_text, tags, intensity, time_of_day, supplement_image)
