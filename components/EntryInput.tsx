@@ -63,6 +63,7 @@ export default function EntryInput({ onSubmit, isSubmitting, lang = 'en' }: Prop
   return (
     <div>
       <textarea
+        id="entry-input-text"
         ref={textareaRef}
         value={text}
         onChange={e => setText(e.target.value)}
@@ -75,7 +76,7 @@ export default function EntryInput({ onSubmit, isSubmitting, lang = 'en' }: Prop
 
       <div className="mt-4 border-t border-stone-800 pt-4">
         {/* Body tags */}
-        <div className="flex flex-wrap gap-1.5 mb-2">
+        <div id="entry-tags" className="flex flex-wrap gap-1.5 mb-2">
           {BODY_TAGS.map(tag => (
             <button key={tag} onClick={() => toggleTag(tag)}
               className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
@@ -114,7 +115,7 @@ export default function EntryInput({ onSubmit, isSubmitting, lang = 'en' }: Prop
 
         <div className="mt-3 flex items-center justify-between flex-wrap gap-2">
           {/* Time of day */}
-          <div className="flex gap-1">
+          <div id="entry-timeofday" className="flex gap-1">
             {t.timeOfDay.map(tod => (
               <button key={tod} onClick={() => setTimeOfDay(tod)}
                 className={`px-2 py-0.5 rounded text-xs transition-colors ${
@@ -123,7 +124,7 @@ export default function EntryInput({ onSubmit, isSubmitting, lang = 'en' }: Prop
             ))}
           </div>
 
-          <button onClick={handleSubmit} disabled={!text.trim() || isSubmitting}
+          <button id="entry-save-btn" onClick={handleSubmit} disabled={!text.trim() || isSubmitting}
             className="px-4 py-2 bg-teal-700 text-teal-100 text-sm font-semibold rounded-xl disabled:opacity-30 hover:bg-teal-600 active:scale-95 transition-all">
             {isSubmitting ? t.saving : t.saveCta}
           </button>

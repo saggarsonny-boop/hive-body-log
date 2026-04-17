@@ -5,15 +5,23 @@ import { useState } from 'react'
 interface Props {
   sessionId: string
   emailSaved?: string | null
+  autoOpen?: boolean
+  firstEntryMessage?: string
+  onDismiss?: () => void
 }
 
 type State = 'idle' | 'sending' | 'sent' | 'error'
 
-export default function AccountPrompt({ sessionId, emailSaved }: Props) {
+export default function AccountPrompt({ sessionId, emailSaved, autoOpen, firstEntryMessage, onDismiss }: Props) {
   const [email, setEmail] = useState(emailSaved || '')
   const [state, setState] = useState<State>(emailSaved ? 'sent' : 'idle')
   const [error, setError] = useState('')
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(autoOpen || false)
+
+  function handleClose() {
+    setOpen(false)
+    onDismiss?.()
+  }
 
   if (state === 'sent' && !open) {
     return (
@@ -21,7 +29,7 @@ export default function AccountPrompt({ sessionId, emailSaved }: Props) {
         <svg className="w-3 h-3 text-teal-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
         </svg>
-        <span className="text-xs text-stone-600">Data saved across devices · {email}</span>
+        <span className="text-xs text-stone-600">Story saved across devices · {email}</span>
         <button onClick={() => { setState('idle'); setEmail(''); setOpen(true) }} className="ml-auto text-xs text-stone-700 hover:text-stone-500 underline">Change</button>
       </div>
     )
@@ -46,15 +54,19 @@ export default function AccountPrompt({ sessionId, emailSaved }: Props) {
             <p className="text-stone-300 text-sm font-medium">Check your email</p>
             <p className="text-stone-600 text-xs mt-0.5">Sent a recovery link to {email}</p>
           </div>
-          <button onClick={() => setOpen(false)} className="text-stone-700 text-lg leading-none">×</button>
+          <button onClick={handleClose} className="text-stone-700 text-lg leading-none">×</button>
         </div>
       ) : (
         <>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-stone-400 text-sm font-medium">Save data across devices</p>
-            <button onClick={() => setOpen(false)} className="text-stone-700 text-lg leading-none">×</button>
+            <p className="text-stone-400 text-sm font-medium">
+              {firstEntryMessage || 'Save your story across devices'}
+            </p>
+            <button onClick={handleClose} className="text-stone-700 text-lg leading-none">×</button>
           </div>
-          <p className="text-stone-600 text-xs mb-3">Enter your email to recover your health story on any device. No password needed.</p>
+          {!firstEntryMessage && (
+            <p className="text-stone-600 text-xs mb-3">Enter your email to recover your health story on any device. No password needed.</p>
+          )}
           <div className="flex gap-2">
             <input
               type="email"
@@ -70,7 +82,7 @@ export default function AccountPrompt({ sessionId, emailSaved }: Props) {
             </button>
           </div>
           {error && <p className="mt-2 text-red-500 text-xs">{error}</p>}
-          <button onClick={() => setOpen(false)} className="mt-2 text-stone-700 text-xs">No thanks</button>
+          <button onClick={handleClose} className="mt-2 text-stone-700 text-xs hover:text-stone-500 transition-colors">No thanks</button>
         </>
       )}
     </div>

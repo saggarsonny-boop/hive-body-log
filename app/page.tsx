@@ -9,6 +9,7 @@ import TimelineView from '@/components/TimelineView'
 import PatternsView from '@/components/PatternsView'
 import AccountPrompt from '@/components/AccountPrompt'
 import HiveFooter from '@/components/HiveFooter'
+import TourGuide from '@/components/TourGuide'
 import type { Entry, Upload, AIEntryResponse } from '@/lib/types'
 import { detectLang, getStrings, SUPPORTED_LANGS, type LangCode } from '@/lib/i18n'
 
@@ -25,6 +26,16 @@ const CLINICIAN_TYPES = [
 ]
 
 const PHOTO_TYPES = ['Supplement', 'Medication', 'Food / Ingredients', 'Wound / Rash', 'Other']
+
+const TOUR_STEPS = [
+  { target: 'mode-selector', title: 'Three ways to add to your story', description: 'Type a note, upload a document, or take a photo. Pick what fits.' },
+  { target: 'entry-input-text', title: 'Describe anything', description: 'Symptoms, how you feel, what you took, what you ate. No diagnosis. Just your story.' },
+  { target: 'entry-tags', title: 'Quick tags', description: 'Tap to tag a body area or category. Helps with pattern analysis later.' },
+  { target: 'entry-timeofday', title: 'When did this happen?', description: 'Auto-selected based on the time. Tap to change.' },
+  { target: 'entry-save-btn', title: 'Add to your story', description: 'Every entry builds your health picture over time.' },
+  { target: 'tab-bar', title: 'Your story grows here', description: 'Log is today. Timeline is your history. Patterns is the bigger picture.' },
+  { target: 'export-btn', title: 'Share with any clinician', description: 'Export a tailored PDF for your GP, specialist, or any healthcare professional.' },
+]
 
 function compressImageFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -57,6 +68,35 @@ function fileToBase64(file: File): Promise<string> {
   })
 }
 
+function computeWeeklySummary(entries: Entry[]) {
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  const weekEntries = entries.filter(e => new Date(e.created_at) >= weekAgo)
+  if (weekEntries.length < 3) return null
+  const tagCounts: Record<string, number> = {}
+  weekEntries.forEach(e => { (e.tags || []).forEach(tag => { tagCounts[tag] = (tagCounts[tag] || 0) + 1 }) })
+  const uniqueDays = new Set(weekEntries.map(e => new Date(e.created_at).toDateString())).size
+  const topTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([tag]) => tag)
+  return { entryCount: weekEntries.length, uniqueDays, topTags }
+}
+
+function detectRepeatedSymptoms(entries: Entry[]) {
+  const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
+  const recent = entries.filter(e => new Date(e.created_at) >= twoWeeksAgo)
+  const tagDays: Record<string, Set<string>> = {}
+  recent.forEach(e => {
+    const day = new Date(e.created_at).toDateString()
+    ;(e.tags || []).forEach(tag => {
+      if (!tagDays[tag]) tagDays[tag] = new Set()
+      tagDays[tag].add(day)
+    })
+  })
+  return Object.entries(tagDays)
+    .filter(([, days]) => days.size >= 3)
+    .map(([tag, days]) => ({ tag, days: days.size }))
+    .sort((a, b) => b.days - a.days)
+    .slice(0, 2)
+}
+
 function AuthBanner() {
   const params = useSearchParams()
   const auth = params.get('auth')
@@ -85,12 +125,21 @@ function App() {
   const [showExportMenu, setShowExportMenu] = useState(false)
   const [lang, setLang] = useState<LangCode>('en')
   const [savedEmail, setSavedEmail] = useState<string | null>(null)
+  const [onboardingDone, setOnboardingDone] = useState(true)
+  const [showAccountAfterEntry, setShowAccountAfterEntry] = useState(false)
+  const [reminderDue, setReminderDue] = useState<string | null>(null)
+  const [showReminderPrompt, setShowReminderPrompt] = useState<string | null>(null)
+  const [weekSummary, setWeekSummary] = useState<{ entryCount: number; uniqueDays: number; topTags: string[] } | null>(null)
+  const [showWeeklySummary, setShowWeeklySummary] = useState(false)
+  const [symptomNotices, setSymptomNotices] = useState<{ tag: string; days: number }[]>([])
+  const [shareLink, setShareLink] = useState<string | null>(null)
+  const [sharing, setSharing] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const exportMenuRef = useRef<HTMLDivElement>(null)
 
   const t = getStrings(lang)
-  const isRTL = t.dir === 'rtl'
 
   useEffect(() => {
     const detectedLang = detectLang()
@@ -103,9 +152,33 @@ function App() {
     setSessionId(id)
     setSavedEmail(localStorage.getItem('hbl_email'))
 
+    if (!localStorage.getItem('hbl_onboarded')) setOnboardingDone(false)
+
+    const reminderAt = localStorage.getItem('hbl_reminder_at')
+    if (reminderAt && Date.now() >= new Date(reminderAt).getTime()) {
+      setReminderDue(localStorage.getItem('hbl_reminder_label') || 'medication')
+      localStorage.removeItem('hbl_reminder_at')
+      localStorage.removeItem('hbl_reminder_label')
+    }
+
     fetch(`/api/entries?session_id=${id}`).then(r => r.json()).then(d => { if (d.entries) setEntries(d.entries) }).catch(() => {})
     fetch(`/api/upload?session_id=${id}`).then(r => r.json()).then(d => { if (d.uploads) setUploads(d.uploads) }).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (entries.length === 0) return
+    setSymptomNotices(detectRepeatedSymptoms(entries))
+    const today = new Date()
+    const weekKey = `${today.getFullYear()}-W${Math.ceil(today.getDate() / 7)}`
+    if (today.getDay() === 0 || localStorage.getItem('hbl_weekly_key') !== weekKey) {
+      const summary = computeWeeklySummary(entries)
+      if (summary) {
+        setWeekSummary(summary)
+        setShowWeeklySummary(true)
+        localStorage.setItem('hbl_weekly_key', weekKey)
+      }
+    }
+  }, [entries])
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -114,6 +187,39 @@ function App() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  function dismissOnboarding() {
+    setOnboardingDone(true)
+    localStorage.setItem('hbl_onboarded', '1')
+  }
+
+  function setReminder(label: string, hours: number) {
+    const at = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString()
+    localStorage.setItem('hbl_reminder_at', at)
+    localStorage.setItem('hbl_reminder_label', label)
+    setShowReminderPrompt(null)
+  }
+
+  async function createShareLink() {
+    if (!sessionId || sharing) return
+    setSharing(true)
+    try {
+      const res = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const url = `${window.location.origin}/share/${data.token}`
+        setShareLink(url)
+        await navigator.clipboard.writeText(url).catch(() => {})
+        setShareCopied(true)
+        setTimeout(() => setShareCopied(false), 3000)
+      }
+    } catch {}
+    setSharing(false)
+  }
 
   async function handleEntrySubmit(text: string, tags: string[], intensity: number | null, timeOfDay: string | null, supplementImage: string | null) {
     if (!sessionId) return
@@ -127,6 +233,13 @@ function App() {
         const data = await res.json()
         setLastResponse(data.ai_response)
         setEntries(prev => [data.entry, ...prev])
+        if (!localStorage.getItem('hbl_email') && !localStorage.getItem('hbl_email_prompted')) {
+          setShowAccountAfterEntry(true)
+          localStorage.setItem('hbl_email_prompted', '1')
+        }
+        if (tags.includes('Medication')) {
+          setShowReminderPrompt(text.slice(0, 60))
+        }
       }
     } catch {}
     setIsSubmitting(false)
@@ -174,20 +287,73 @@ function App() {
     e.preventDefault(); setIsDragging(false)
     const file = e.dataTransfer.files[0]
     if (file) handleFileUpload(file)
-  }, [sessionId])
+  }, [sessionId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const MODE_CONFIG = {
+    type: {
+      icon: (
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      ),
+      label: t.modeType,
+      desc: t.modeTypeDesc,
+    },
+    upload: {
+      icon: (
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      ),
+      label: t.modeUpload,
+      desc: t.modeUploadDesc,
+    },
+    photo: {
+      icon: (
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      ),
+      label: t.modePhoto,
+      desc: t.modePhotoDesc,
+    },
+  }
 
   return (
     <div className="min-h-screen bg-[#0c0a09]" dir={t.dir}>
+
+      {/* First-visit onboarding overlay */}
+      {!onboardingDone && (
+        <div className="fixed inset-0 z-50 bg-[#0c0a09]/95 flex items-center justify-center px-4">
+          <div className="bg-stone-900 border border-stone-800 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <div className="text-4xl mb-4">🫀</div>
+            <h2 className="text-stone-100 text-xl font-semibold mb-3">HiveBodyLog</h2>
+            <p className="text-stone-400 text-sm leading-relaxed mb-3">
+              Your personal health story. Log anything — symptoms, medications, how you feel, what you ate.
+              No diagnosis. No judgment. Just your story, over time.
+            </p>
+            <p className="text-stone-700 text-xs mb-6">
+              This story belongs to this device. Add your email to take it anywhere.
+            </p>
+            <button
+              onClick={dismissOnboarding}
+              className="w-full py-3 bg-teal-700 text-teal-100 font-semibold rounded-xl hover:bg-teal-600 transition-colors"
+            >
+              Start my story
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-[#0c0a09] border-b border-stone-900 px-4 py-3 flex items-center justify-between sticky top-0 z-20 no-print">
         <div className="flex items-center gap-3">
           <a href="https://hive.baby" className="text-xs text-stone-700 hover:text-stone-500 transition-colors">{t.backToPlanet}</a>
           <span className="text-stone-800">·</span>
           <span className="font-semibold text-stone-200 tracking-tight text-sm">{t.appName}</span>
-          <span className="text-xs text-stone-700 hidden sm:inline">{t.tagline}</span>
         </div>
         <div className="flex items-center gap-2">
-          {/* Language selector */}
           <select
             value={lang}
             onChange={e => { const l = e.target.value as LangCode; setLang(l); localStorage.setItem('hbl_lang', l); document.documentElement.dir = getStrings(l).dir; document.documentElement.lang = l }}
@@ -197,14 +363,25 @@ function App() {
             {SUPPORTED_LANGS.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
           </select>
 
-          {/* Export with clinician dropdown */}
-          <div className="relative" ref={exportMenuRef}>
+          {entries.length > 0 && (
+            <button
+              onClick={createShareLink}
+              disabled={sharing}
+              className="text-xs text-stone-600 border border-stone-800 rounded-lg px-3 py-1.5 hover:text-stone-400 hover:border-stone-700 transition-colors"
+            >
+              {sharing ? '…' : shareCopied ? '✓ Copied' : 'Share'}
+            </button>
+          )}
+
+          <div className="relative" ref={exportMenuRef} id="export-btn">
             <button
               onClick={() => setShowExportMenu(v => !v)}
               className="text-xs text-stone-600 border border-stone-800 rounded-lg px-3 py-1.5 hover:text-stone-400 hover:border-stone-700 transition-colors flex items-center gap-1"
             >
               {t.exportLabel}
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
             {showExportMenu && (
               <div className="absolute right-0 top-full mt-1 bg-stone-900 border border-stone-800 rounded-xl shadow-xl z-30 min-w-[220px] py-1 overflow-hidden">
@@ -228,21 +405,72 @@ function App() {
 
       <Suspense><AuthBanner /></Suspense>
 
+      {/* Reminder banner */}
+      {reminderDue && (
+        <div className="bg-amber-950 border-b border-amber-900 px-4 py-3 flex items-center gap-3 no-print">
+          <span className="text-xs text-amber-400">⏰ Time to log how you feel after {reminderDue}</span>
+          <button
+            onClick={() => { setActiveTab('log'); setEntryMode('type'); setReminderDue(null) }}
+            className="ml-auto text-xs text-amber-300 underline"
+          >Log now</button>
+          <button onClick={() => setReminderDue(null)} className="text-amber-800 text-base leading-none ml-2">×</button>
+        </div>
+      )}
+
       <main className="max-w-2xl mx-auto px-4 py-5 space-y-3">
 
-        {/* Entry mode card */}
-        <div className="bg-stone-900 rounded-2xl border border-stone-800 overflow-hidden">
-          {/* Mode tabs */}
-          <div className="flex border-b border-stone-800">
-            {(['type', 'upload', 'photo'] as EntryMode[]).map(mode => (
-              <button key={mode} onClick={() => setEntryMode(mode)}
-                className={`flex-1 py-3 text-xs font-semibold uppercase tracking-wider transition-colors ${
-                  entryMode === mode ? 'text-teal-400 border-b-2 border-teal-600 bg-stone-900' : 'text-stone-600 hover:text-stone-400 bg-stone-950'
-                }`}>
-                {mode === 'type' ? t.modeType : mode === 'upload' ? t.modeUpload : t.modePhoto}
-              </button>
-            ))}
+        {/* Weekly summary card */}
+        {showWeeklySummary && weekSummary && (
+          <div className="bg-stone-900 border border-stone-800 rounded-2xl p-4 relative no-print">
+            <button onClick={() => setShowWeeklySummary(false)} className="absolute top-3 right-3 text-stone-700 text-base leading-none">×</button>
+            <p className="text-xs text-amber-600 font-semibold uppercase tracking-wider mb-1.5">Your health week</p>
+            <p className="text-stone-300 text-sm">
+              {weekSummary.entryCount} {weekSummary.entryCount === 1 ? 'entry' : 'entries'} across {weekSummary.uniqueDays} {weekSummary.uniqueDays === 1 ? 'day' : 'days'}.
+              {weekSummary.topTags.length > 0 && (
+                <> Most logged: <span className="text-teal-400">{weekSummary.topTags.join(', ')}</span>.</>
+              )}
+            </p>
           </div>
+        )}
+
+        {/* Symptom duration notices */}
+        {symptomNotices.map(notice => (
+          <div key={notice.tag} className="bg-stone-900 border border-amber-900/40 rounded-xl px-4 py-3 flex items-start gap-3 no-print">
+            <div className="w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0 mt-1.5" />
+            <p className="text-xs text-stone-400 leading-relaxed">
+              You&apos;ve mentioned <span className="text-amber-500">{notice.tag}</span> on {notice.days} different days in the past two weeks.
+              {notice.days >= 5 && ' This pattern might be worth discussing with a clinician.'}
+            </p>
+          </div>
+        ))}
+
+        {/* Mode selector — large card-style buttons */}
+        <div id="mode-selector" className="grid grid-cols-3 gap-2">
+          {(['type', 'upload', 'photo'] as EntryMode[]).map(mode => {
+            const cfg = MODE_CONFIG[mode]
+            const isActive = entryMode === mode
+            return (
+              <button
+                key={mode}
+                onClick={() => setEntryMode(mode)}
+                className={`flex flex-col items-center gap-2 py-4 px-2 rounded-2xl border transition-all text-center ${
+                  isActive
+                    ? 'bg-teal-950 border-teal-700 text-teal-300'
+                    : 'bg-stone-900 border-stone-800 text-stone-500 hover:border-stone-700 hover:text-stone-400'
+                }`}
+              >
+                <div className={isActive ? 'text-teal-400' : 'text-stone-600'}>{cfg.icon}</div>
+                <div>
+                  <div className="text-sm font-semibold">{cfg.label}</div>
+                  <div className="text-xs mt-0.5 opacity-70 leading-tight hidden sm:block">{cfg.desc}</div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Entry card */}
+        <div className="bg-stone-900 rounded-2xl border border-stone-800 overflow-hidden">
 
           {/* TYPE mode */}
           {entryMode === 'type' && (
@@ -269,9 +497,7 @@ function App() {
                     <p className="text-stone-500 text-sm">{t.uploadProcessing}</p>
                   </div>
                 ) : uploadStatus === 'done' ? (
-                  <div className="space-y-1">
-                    <p className="text-teal-400 text-sm font-medium">{t.savedConfirm}</p>
-                  </div>
+                  <p className="text-teal-400 text-sm font-medium">{t.savedConfirm}</p>
                 ) : (
                   <div className="space-y-1">
                     <p className="text-stone-400 text-sm font-medium">{t.uploadDrop}</p>
@@ -288,7 +514,6 @@ function App() {
           {/* PHOTO mode */}
           {entryMode === 'photo' && (
             <div className="p-5 space-y-4">
-              {/* Photo type selector */}
               <div className="flex flex-wrap gap-1.5">
                 {PHOTO_TYPES.map(pt => (
                   <button key={pt} onClick={() => setPhotoType(pt)}
@@ -298,7 +523,6 @@ function App() {
                 ))}
               </div>
 
-              {/* Photo capture */}
               {!photoPreview ? (
                 <button onClick={() => photoInputRef.current?.click()}
                   className="w-full border-2 border-dashed border-stone-700 rounded-xl p-10 text-center hover:border-stone-600 transition-colors">
@@ -307,6 +531,7 @@ function App() {
                 </button>
               ) : (
                 <div className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={photoPreview} alt="Photo" className="w-full rounded-xl max-h-48 object-cover" />
                   <button onClick={() => { setPhotoPreview(null); setPhotoBase64(null) }}
                     className="absolute top-2 right-2 bg-stone-900/80 text-stone-300 rounded-full w-7 h-7 flex items-center justify-center text-sm">×</button>
@@ -336,15 +561,54 @@ function App() {
         {/* AI response card */}
         {lastResponse && <AIResponseCard response={lastResponse} onDismiss={() => setLastResponse(null)} />}
 
-        {/* Account section */}
-        {sessionId && (
-          <div className="px-1">
-            <AccountPrompt sessionId={sessionId} emailSaved={savedEmail} />
+        {/* Medication reminder prompt */}
+        {showReminderPrompt && (
+          <div className="bg-stone-900 border border-stone-800 rounded-xl p-4 no-print">
+            <p className="text-sm text-stone-300 mb-3">Remind me to log how I feel in…</p>
+            <div className="flex gap-2 flex-wrap">
+              {([['2h', 2], ['4h', 4], ['6h', 6], ['12h', 12]] as [string, number][]).map(([label, hours]) => (
+                <button key={label} onClick={() => setReminder(showReminderPrompt, hours)}
+                  className="px-3 py-1.5 bg-stone-800 text-stone-300 text-xs rounded-lg hover:bg-stone-700 transition-colors">
+                  {label}
+                </button>
+              ))}
+              <button onClick={() => setShowReminderPrompt(null)} className="px-3 py-1.5 text-stone-600 text-xs hover:text-stone-400 transition-colors">Skip</button>
+            </div>
+          </div>
+        )}
+
+        {/* Account prompt — shown after first entry */}
+        {showAccountAfterEntry && sessionId && (
+          <div className="no-print">
+            <AccountPrompt
+              sessionId={sessionId}
+              emailSaved={null}
+              autoOpen
+              firstEntryMessage="Want to access your story on other devices? Add your email — no password needed."
+              onDismiss={() => setShowAccountAfterEntry(false)}
+            />
+          </div>
+        )}
+
+        {/* Share link display */}
+        {shareLink && (
+          <div className="bg-stone-900 border border-teal-900/40 rounded-xl px-4 py-3 flex items-center gap-3 no-print">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-teal-400 font-medium mb-0.5">Read-only link · Expires in 7 days</p>
+              <p className="text-xs text-stone-600 truncate">{shareLink}</p>
+            </div>
+            <button
+              onClick={() => { navigator.clipboard.writeText(shareLink); setShareCopied(true); setTimeout(() => setShareCopied(false), 2000) }}
+              className="text-xs text-stone-500 border border-stone-800 rounded-lg px-2.5 py-1.5 hover:text-stone-300 transition-colors shrink-0"
+            >
+              {shareCopied ? '✓' : 'Copy'}
+            </button>
+            <button onClick={() => setShareLink(null)} className="text-stone-700 text-base leading-none">×</button>
           </div>
         )}
 
         {/* Tab bar */}
-        <div className="flex gap-1 bg-stone-950 rounded-xl p-1 border border-stone-900 no-print">
+        <div id="tab-bar" className="flex gap-1 bg-stone-950 rounded-xl p-1 border border-stone-900 no-print">
           {(['log', 'timeline', 'patterns'] as Tab[]).map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={`flex-1 py-2 text-xs font-semibold uppercase tracking-wider rounded-lg transition-all ${
@@ -355,12 +619,39 @@ function App() {
           ))}
         </div>
 
-        {activeTab === 'log' && <LogView entries={entries} uploads={uploads} />}
+        {activeTab === 'log' && (
+          <>
+            <LogView entries={entries} uploads={uploads} />
+
+            {/* Coming soon */}
+            <div className="mt-4 pt-6 border-t border-stone-900 no-print">
+              <p className="text-xs text-stone-700 font-medium uppercase tracking-wider mb-3">Coming soon</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { icon: '🍎', label: 'Apple Health import' },
+                  { icon: '💚', label: 'Google Fit import' },
+                  { icon: '⌚', label: 'Wearable data' },
+                  { icon: '👨‍👩‍👧', label: 'Family profiles' },
+                  { icon: '🌍', label: 'Community patterns' },
+                ].map(item => (
+                  <div key={item.label} className="flex items-center gap-2 px-3 py-2.5 bg-stone-900 rounded-xl border border-stone-800 opacity-40">
+                    <span className="text-sm">{item.icon}</span>
+                    <span className="text-xs text-stone-500">{item.label}</span>
+                    <span className="ml-auto text-[10px] text-stone-700 uppercase tracking-wider font-medium">Soon</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
         {activeTab === 'timeline' && <TimelineView entries={entries} uploads={uploads} />}
         {activeTab === 'patterns' && <PatternsView sessionId={sessionId} />}
+
       </main>
 
       <HiveFooter />
+
+      <TourGuide steps={TOUR_STEPS} tourKey="hbl_tour_done" />
     </div>
   )
 }

@@ -43,7 +43,15 @@ CREATE TABLE IF NOT EXISTS uploads (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS share_links (
+  token TEXT PRIMARY KEY,
+  session_id TEXT REFERENCES sessions(id) ON DELETE CASCADE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS entries_session_created ON entries (session_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS uploads_session_created ON uploads (session_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS magic_links_token ON magic_links (token);
 CREATE INDEX IF NOT EXISTS sessions_email ON sessions (email);
+CREATE INDEX IF NOT EXISTS share_links_token ON share_links (token);
