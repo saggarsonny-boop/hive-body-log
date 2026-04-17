@@ -1,7 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { AIEntryResponse, PatternAnalysis, Entry } from './types'
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
+function getClient() {
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+}
 
 export async function processEntry(
   rawText: string,
@@ -59,7 +61,7 @@ Rules: Never diagnose. Never suggest treatments. Never use alarming language. To
     content = basePrompt
   }
 
-  const response = await client.messages.create({
+  const response = await getClient().messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 1024,
     messages: [{ role: 'user', content }],
@@ -80,7 +82,7 @@ export async function analyzePatterns(entries: Entry[]): Promise<PatternAnalysis
     body_part: e.structured?.body_part ?? null,
   }))
 
-  const response = await client.messages.create({
+  const response = await getClient().messages.create({
     model: 'claude-opus-4-5',
     max_tokens: 2048,
     messages: [{
