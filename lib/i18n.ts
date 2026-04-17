@@ -1,0 +1,393 @@
+export type LangCode = 'en' | 'es' | 'fr' | 'ar' | 'hi' | 'zh' | 'pt'
+
+export interface Strings {
+  appName: string
+  tagline: string
+  backToPlanet: string
+  export: string
+  modeType: string
+  modeUpload: string
+  modePhoto: string
+  placeholders: [string, string]
+  saveCta: string
+  saving: string
+  savedConfirm: string
+  followUpLabel: string
+  tabLog: string
+  tabTimeline: string
+  tabPatterns: string
+  todayEmpty: string
+  timelineEmpty: string
+  patternsLoading: string
+  patternsInsufficient: (n: number) => string
+  patternOverview: string
+  patternThemes: string
+  patternAreas: string
+  patternDisclaimer: string
+  uploadDrop: string
+  uploadBrowse: string
+  uploadProcessing: string
+  photoCapture: string
+  photoTypes: string[]
+  accountSave: string
+  accountEmail: string
+  accountSendLink: string
+  accountSent: (email: string) => string
+  accountNoThanks: string
+  exportLabel: string
+  clinicianTypes: string[]
+  footer: { support: string; contribute: string; planet: string }
+  timeOfDay: [string, string, string, string]
+  morning: string
+  intensity: string
+  dir: 'ltr' | 'rtl'
+}
+
+const strings: Record<LangCode, Strings> = {
+  en: {
+    appName: 'HiveBodyLog',
+    tagline: 'health story',
+    backToPlanet: '← hive.baby',
+    export: 'Export',
+    modeType: 'Type',
+    modeUpload: 'Upload',
+    modePhoto: 'Photo',
+    placeholders: [
+      'Write what happened, where in the body, and when.',
+      'If you are not sure it matters, write it anyway.',
+    ],
+    saveCta: 'Save to my health story',
+    saving: 'Saving…',
+    savedConfirm: 'Saved to your health story',
+    followUpLabel: '',
+    tabLog: 'Log',
+    tabTimeline: 'Timeline',
+    tabPatterns: 'Patterns',
+    todayEmpty: 'Nothing logged today yet.',
+    timelineEmpty: 'Your timeline will appear as you log entries.',
+    patternsLoading: 'Analysing your health story…',
+    patternsInsufficient: (n) => `${n} more ${n === 1 ? 'entry' : 'entries'} needed`,
+    patternOverview: 'Overview',
+    patternThemes: 'Recurring themes',
+    patternAreas: 'Body areas mentioned',
+    patternDisclaimer: 'Pattern literacy only · Not a diagnosis · Not medical advice',
+    uploadDrop: 'Drop a file here, or click to browse',
+    uploadBrowse: 'PDF, image, ECG, X-ray, lab result',
+    uploadProcessing: 'Reading document…',
+    photoCapture: 'Take or upload a photo',
+    photoTypes: ['Supplement', 'Medication', 'Food / Ingredients', 'Wound / Rash', 'Other'],
+    accountSave: 'Save your health story across devices',
+    accountEmail: 'your@email.com',
+    accountSendLink: 'Send link',
+    accountSent: (email) => `Recovery link sent to ${email}`,
+    accountNoThanks: 'No thanks',
+    exportLabel: 'Export',
+    clinicianTypes: ['GP / Primary Care', 'Emergency / A&E / ER', 'Specialist / Consultant', 'Psychologist / Therapist', 'Pharmacist', 'Dentist'],
+    footer: { support: 'Support', contribute: 'Contribute', planet: 'hive.baby' },
+    timeOfDay: ['Morning', 'Afternoon', 'Evening', 'Night'],
+    morning: 'Morning',
+    intensity: 'Intensity',
+    dir: 'ltr',
+  },
+  es: {
+    appName: 'HiveBodyLog',
+    tagline: 'historia de salud',
+    backToPlanet: '← hive.baby',
+    export: 'Exportar',
+    modeType: 'Escribir',
+    modeUpload: 'Subir',
+    modePhoto: 'Foto',
+    placeholders: [
+      'Escribe qué pasó, dónde en el cuerpo y cuándo.',
+      'Si no estás seguro de que importa, escríbelo de todas formas.',
+    ],
+    saveCta: 'Guardar en mi historia de salud',
+    saving: 'Guardando…',
+    savedConfirm: 'Guardado en tu historia de salud',
+    followUpLabel: '',
+    tabLog: 'Hoy',
+    tabTimeline: 'Línea de tiempo',
+    tabPatterns: 'Patrones',
+    todayEmpty: 'Nada registrado hoy todavía.',
+    timelineEmpty: 'Tu línea de tiempo aparecerá conforme registres entradas.',
+    patternsLoading: 'Analizando tu historia de salud…',
+    patternsInsufficient: (n) => `Necesitas ${n} ${n === 1 ? 'entrada' : 'entradas'} más`,
+    patternOverview: 'Resumen',
+    patternThemes: 'Temas recurrentes',
+    patternAreas: 'Áreas del cuerpo mencionadas',
+    patternDisclaimer: 'Solo reconocimiento de patrones · No es diagnóstico',
+    uploadDrop: 'Suelta un archivo aquí o haz clic para buscar',
+    uploadBrowse: 'PDF, imagen, ECG, radiografía, resultado de laboratorio',
+    uploadProcessing: 'Leyendo documento…',
+    photoCapture: 'Toma o sube una foto',
+    photoTypes: ['Suplemento', 'Medicamento', 'Comida / Ingredientes', 'Herida / Erupción', 'Otro'],
+    accountSave: 'Guarda tu historia de salud en todos tus dispositivos',
+    accountEmail: 'tu@correo.com',
+    accountSendLink: 'Enviar enlace',
+    accountSent: (email) => `Enlace enviado a ${email}`,
+    accountNoThanks: 'No gracias',
+    exportLabel: 'Exportar',
+    clinicianTypes: ['Médico de cabecera', 'Urgencias / Emergencia', 'Especialista', 'Psicólogo / Terapeuta', 'Farmacéutico', 'Dentista'],
+    footer: { support: 'Apoyar', contribute: 'Contribuir', planet: 'hive.baby' },
+    timeOfDay: ['Mañana', 'Tarde', 'Tarde-noche', 'Noche'],
+    morning: 'Mañana',
+    intensity: 'Intensidad',
+    dir: 'ltr',
+  },
+  fr: {
+    appName: 'HiveBodyLog',
+    tagline: 'histoire de santé',
+    backToPlanet: '← hive.baby',
+    export: 'Exporter',
+    modeType: 'Écrire',
+    modeUpload: 'Importer',
+    modePhoto: 'Photo',
+    placeholders: [
+      'Décrivez ce qui s\'est passé, où dans le corps et quand.',
+      'Si vous n\'êtes pas sûr que c\'est important, écrivez-le quand même.',
+    ],
+    saveCta: 'Sauvegarder dans mon histoire de santé',
+    saving: 'Enregistrement…',
+    savedConfirm: 'Enregistré dans votre histoire de santé',
+    followUpLabel: '',
+    tabLog: 'Aujourd\'hui',
+    tabTimeline: 'Chronologie',
+    tabPatterns: 'Tendances',
+    todayEmpty: 'Rien enregistré aujourd\'hui.',
+    timelineEmpty: 'Votre chronologie apparaîtra au fil de vos entrées.',
+    patternsLoading: 'Analyse de votre histoire de santé…',
+    patternsInsufficient: (n) => `${n} ${n === 1 ? 'entrée' : 'entrées'} de plus nécessaire${n > 1 ? 's' : ''}`,
+    patternOverview: 'Aperçu',
+    patternThemes: 'Thèmes récurrents',
+    patternAreas: 'Zones corporelles mentionnées',
+    patternDisclaimer: 'Reconnaissance de tendances uniquement · Pas un diagnostic',
+    uploadDrop: 'Déposez un fichier ici ou cliquez pour parcourir',
+    uploadBrowse: 'PDF, image, ECG, radio, résultat de labo',
+    uploadProcessing: 'Lecture du document…',
+    photoCapture: 'Prenez ou importez une photo',
+    photoTypes: ['Complément', 'Médicament', 'Aliment / Ingrédients', 'Plaie / Éruption', 'Autre'],
+    accountSave: 'Sauvegardez votre histoire de santé sur tous vos appareils',
+    accountEmail: 'votre@email.com',
+    accountSendLink: 'Envoyer le lien',
+    accountSent: (email) => `Lien de récupération envoyé à ${email}`,
+    accountNoThanks: 'Non merci',
+    exportLabel: 'Exporter',
+    clinicianTypes: ['Médecin généraliste', 'Urgences', 'Spécialiste', 'Psychologue / Thérapeute', 'Pharmacien', 'Dentiste'],
+    footer: { support: 'Soutenir', contribute: 'Contribuer', planet: 'hive.baby' },
+    timeOfDay: ['Matin', 'Après-midi', 'Soirée', 'Nuit'],
+    morning: 'Matin',
+    intensity: 'Intensité',
+    dir: 'ltr',
+  },
+  ar: {
+    appName: 'HiveBodyLog',
+    tagline: 'قصة صحتك',
+    backToPlanet: 'hive.baby ←',
+    export: 'تصدير',
+    modeType: 'كتابة',
+    modeUpload: 'رفع',
+    modePhoto: 'صورة',
+    placeholders: [
+      'اكتب ما حدث، وأين في الجسم، ومتى.',
+      'إذا لم تكن متأكداً من أهميته، اكتبه على أي حال.',
+    ],
+    saveCta: 'حفظ في قصة صحتي',
+    saving: 'جارٍ الحفظ…',
+    savedConfirm: 'تم الحفظ في قصة صحتك',
+    followUpLabel: '',
+    tabLog: 'اليوم',
+    tabTimeline: 'الجدول الزمني',
+    tabPatterns: 'الأنماط',
+    todayEmpty: 'لم يتم تسجيل أي شيء اليوم بعد.',
+    timelineEmpty: 'سيظهر جدولك الزمني مع تسجيل الإدخالات.',
+    patternsLoading: 'تحليل قصة صحتك…',
+    patternsInsufficient: (n) => `تحتاج ${n} ${n === 1 ? 'إدخال' : 'إدخالات'} أخرى`,
+    patternOverview: 'نظرة عامة',
+    patternThemes: 'الموضوعات المتكررة',
+    patternAreas: 'مناطق الجسم المذكورة',
+    patternDisclaimer: 'قراءة الأنماط فقط · ليس تشخيصاً',
+    uploadDrop: 'أسقط ملفاً هنا أو انقر للتصفح',
+    uploadBrowse: 'PDF، صورة، رسم قلبي، أشعة، نتيجة مختبر',
+    uploadProcessing: 'جارٍ قراءة الملف…',
+    photoCapture: 'التقط صورة أو قم بتحميلها',
+    photoTypes: ['مكمل غذائي', 'دواء', 'طعام / مكونات', 'جرح / طفح', 'أخرى'],
+    accountSave: 'احفظ قصة صحتك على جميع أجهزتك',
+    accountEmail: 'بريدك@الإلكتروني.com',
+    accountSendLink: 'إرسال الرابط',
+    accountSent: (email) => `تم إرسال رابط الاسترداد إلى ${email}`,
+    accountNoThanks: 'لا شكراً',
+    exportLabel: 'تصدير',
+    clinicianTypes: ['طبيب عام', 'طوارئ', 'أخصائي', 'معالج نفسي', 'صيدلاني', 'طبيب أسنان'],
+    footer: { support: 'دعم', contribute: 'مساهمة', planet: 'hive.baby' },
+    timeOfDay: ['صباح', 'ظهر', 'مساء', 'ليل'],
+    morning: 'صباح',
+    intensity: 'الشدة',
+    dir: 'rtl',
+  },
+  hi: {
+    appName: 'HiveBodyLog',
+    tagline: 'स्वास्थ्य कहानी',
+    backToPlanet: '← hive.baby',
+    export: 'निर्यात',
+    modeType: 'टाइप करें',
+    modeUpload: 'अपलोड',
+    modePhoto: 'फ़ोटो',
+    placeholders: [
+      'क्या हुआ, शरीर में कहाँ और कब - यह लिखें।',
+      'अगर आप निश्चित नहीं हैं कि यह महत्वपूर्ण है, तो भी लिखें।',
+    ],
+    saveCta: 'मेरी स्वास्थ्य कहानी में सहेजें',
+    saving: 'सहेजा जा रहा है…',
+    savedConfirm: 'आपकी स्वास्थ्य कहानी में सहेजा गया',
+    followUpLabel: '',
+    tabLog: 'आज',
+    tabTimeline: 'टाइमलाइन',
+    tabPatterns: 'पैटर्न',
+    todayEmpty: 'आज अभी तक कुछ दर्ज नहीं किया।',
+    timelineEmpty: 'आपकी टाइमलाइन जैसे-जैसे आप दर्ज करेंगे दिखाई देगी।',
+    patternsLoading: 'आपकी स्वास्थ्य कहानी का विश्लेषण हो रहा है…',
+    patternsInsufficient: (n) => `${n} और ${n === 1 ? 'एंट्री' : 'एंट्रियाँ'} चाहिए`,
+    patternOverview: 'अवलोकन',
+    patternThemes: 'बार-बार आने वाले विषय',
+    patternAreas: 'उल्लिखित शरीर के अंग',
+    patternDisclaimer: 'केवल पैटर्न जागरूकता · निदान नहीं',
+    uploadDrop: 'यहाँ फ़ाइल छोड़ें या ब्राउज़ करने के लिए क्लिक करें',
+    uploadBrowse: 'PDF, चित्र, ECG, X-ray, लैब रिपोर्ट',
+    uploadProcessing: 'दस्तावेज़ पढ़ा जा रहा है…',
+    photoCapture: 'फ़ोटो लें या अपलोड करें',
+    photoTypes: ['सप्लीमेंट', 'दवा', 'खाना / सामग्री', 'घाव / दाने', 'अन्य'],
+    accountSave: 'सभी डिवाइस पर अपनी स्वास्थ्य कहानी सहेजें',
+    accountEmail: 'आपका@ईमेल.com',
+    accountSendLink: 'लिंक भेजें',
+    accountSent: (email) => `रिकवरी लिंक ${email} पर भेजा गया`,
+    accountNoThanks: 'नहीं धन्यवाद',
+    exportLabel: 'निर्यात',
+    clinicianTypes: ['सामान्य चिकित्सक', 'आपातकाल / ER', 'विशेषज्ञ', 'मनोचिकित्सक', 'फार्मासिस्ट', 'दंत चिकित्सक'],
+    footer: { support: 'समर्थन', contribute: 'योगदान', planet: 'hive.baby' },
+    timeOfDay: ['सुबह', 'दोपहर', 'शाम', 'रात'],
+    morning: 'सुबह',
+    intensity: 'तीव्रता',
+    dir: 'ltr',
+  },
+  zh: {
+    appName: 'HiveBodyLog',
+    tagline: '健康故事',
+    backToPlanet: '← hive.baby',
+    export: '导出',
+    modeType: '文字',
+    modeUpload: '上传',
+    modePhoto: '照片',
+    placeholders: [
+      '写下发生了什么，身体哪个部位，以及什么时候。',
+      '即使你不确定是否重要，也请写下来。',
+    ],
+    saveCta: '保存到我的健康故事',
+    saving: '正在保存…',
+    savedConfirm: '已保存到您的健康故事',
+    followUpLabel: '',
+    tabLog: '今天',
+    tabTimeline: '时间线',
+    tabPatterns: '规律',
+    todayEmpty: '今天还没有记录任何内容。',
+    timelineEmpty: '随着您记录条目，时间线将会显示。',
+    patternsLoading: '正在分析您的健康故事…',
+    patternsInsufficient: (n) => `还需要 ${n} 条记录`,
+    patternOverview: '概述',
+    patternThemes: '反复出现的主题',
+    patternAreas: '提及的身体部位',
+    patternDisclaimer: '仅用于模式识别 · 非诊断',
+    uploadDrop: '将文件拖放到此处，或点击浏览',
+    uploadBrowse: 'PDF、图片、心电图、X光、化验报告',
+    uploadProcessing: '正在读取文件…',
+    photoCapture: '拍照或上传照片',
+    photoTypes: ['补充剂', '药物', '食品/成分', '伤口/皮疹', '其他'],
+    accountSave: '在所有设备上保存您的健康故事',
+    accountEmail: '您的@邮箱.com',
+    accountSendLink: '发送链接',
+    accountSent: (email) => `恢复链接已发送至 ${email}`,
+    accountNoThanks: '不了，谢谢',
+    exportLabel: '导出',
+    clinicianTypes: ['全科医生', '急诊', '专科医生', '心理治疗师', '药剂师', '牙科医生'],
+    footer: { support: '支持', contribute: '贡献', planet: 'hive.baby' },
+    timeOfDay: ['早上', '下午', '傍晚', '夜晚'],
+    morning: '早上',
+    intensity: '强度',
+    dir: 'ltr',
+  },
+  pt: {
+    appName: 'HiveBodyLog',
+    tagline: 'história de saúde',
+    backToPlanet: '← hive.baby',
+    export: 'Exportar',
+    modeType: 'Escrever',
+    modeUpload: 'Carregar',
+    modePhoto: 'Foto',
+    placeholders: [
+      'Escreva o que aconteceu, onde no corpo e quando.',
+      'Se não tem certeza se é importante, escreva mesmo assim.',
+    ],
+    saveCta: 'Guardar na minha história de saúde',
+    saving: 'A guardar…',
+    savedConfirm: 'Guardado na sua história de saúde',
+    followUpLabel: '',
+    tabLog: 'Hoje',
+    tabTimeline: 'Linha do tempo',
+    tabPatterns: 'Padrões',
+    todayEmpty: 'Nada registado hoje ainda.',
+    timelineEmpty: 'A sua linha do tempo aparecerá conforme registar entradas.',
+    patternsLoading: 'A analisar a sua história de saúde…',
+    patternsInsufficient: (n) => `Mais ${n} ${n === 1 ? 'entrada' : 'entradas'} necessária${n > 1 ? 's' : ''}`,
+    patternOverview: 'Visão geral',
+    patternThemes: 'Temas recorrentes',
+    patternAreas: 'Áreas do corpo mencionadas',
+    patternDisclaimer: 'Apenas reconhecimento de padrões · Não é diagnóstico',
+    uploadDrop: 'Solte um ficheiro aqui ou clique para procurar',
+    uploadBrowse: 'PDF, imagem, ECG, raio-X, resultado de laboratório',
+    uploadProcessing: 'A ler documento…',
+    photoCapture: 'Tire ou carregue uma foto',
+    photoTypes: ['Suplemento', 'Medicamento', 'Comida / Ingredientes', 'Ferida / Erupção', 'Outro'],
+    accountSave: 'Guarde a sua história de saúde em todos os dispositivos',
+    accountEmail: 'o-seu@email.com',
+    accountSendLink: 'Enviar ligação',
+    accountSent: (email) => `Ligação de recuperação enviada para ${email}`,
+    accountNoThanks: 'Não, obrigado',
+    exportLabel: 'Exportar',
+    clinicianTypes: ['Médico de família', 'Urgência / Emergência', 'Especialista', 'Psicólogo / Terapeuta', 'Farmacêutico', 'Dentista'],
+    footer: { support: 'Apoiar', contribute: 'Contribuir', planet: 'hive.baby' },
+    timeOfDay: ['Manhã', 'Tarde', 'Noite', 'Madrugada'],
+    morning: 'Manhã',
+    intensity: 'Intensidade',
+    dir: 'ltr',
+  },
+}
+
+const LANG_MAP: Record<string, LangCode> = {
+  es: 'es', 'es-mx': 'es', 'es-ar': 'es', 'es-co': 'es',
+  fr: 'fr', 'fr-fr': 'fr', 'fr-be': 'fr', 'fr-ca': 'fr',
+  ar: 'ar', 'ar-sa': 'ar', 'ar-eg': 'ar',
+  hi: 'hi',
+  zh: 'zh', 'zh-cn': 'zh', 'zh-tw': 'zh', 'zh-hans': 'zh',
+  pt: 'pt', 'pt-br': 'pt', 'pt-pt': 'pt',
+}
+
+export function detectLang(): LangCode {
+  if (typeof navigator === 'undefined') return 'en'
+  const stored = localStorage.getItem('hbl_lang') as LangCode | null
+  if (stored && strings[stored]) return stored
+  const lang = (navigator.language || 'en').toLowerCase()
+  return LANG_MAP[lang] || LANG_MAP[lang.split('-')[0]] || 'en'
+}
+
+export function getStrings(lang: LangCode): Strings {
+  return strings[lang] || strings.en
+}
+
+export const SUPPORTED_LANGS: { code: LangCode; label: string }[] = [
+  { code: 'en', label: 'English' },
+  { code: 'es', label: 'Español' },
+  { code: 'fr', label: 'Français' },
+  { code: 'ar', label: 'العربية' },
+  { code: 'hi', label: 'हिन्दी' },
+  { code: 'zh', label: '中文' },
+  { code: 'pt', label: 'Português' },
+]

@@ -50,5 +50,21 @@ export interface PatternAnalysis {
   computed_at: string
 }
 
+export interface Upload {
+  id: string
+  session_id: string
+  file_name: string
+  file_type: string
+  file_size: number | null
+  claude_summary: string | null
+  structured: {
+    key_findings: string[]
+    document_date: string | null
+    document_type: string
+    for_health_story: string
+  } | null
+  created_at: string
+}
+
 // Export format — PDF for v1. UD export slots in here when ready.
 export type ExportFormat = 'pdf' // | 'ud' (coming when Universal Document is live)

@@ -2,10 +2,17 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  background: #fafaf9;
+  background: #0c0a09;
+  color: #fafaf9;
+}
+
+/* Slider thumb dark */
+input[type=range] {
+  accent-color: #2dd4bf;
 }
 
 @media print {
+  body { background: white; color: black; }
   .no-print { display: none !important; }
   .print-break { page-break-after: always; }
 }
