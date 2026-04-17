@@ -102,7 +102,7 @@ export default function AccountPrompt({ sessionId, emailSaved, autoOpen, firstEn
       localStorage.setItem('hbl_email', email.trim())
       localStorage.setItem('hbl_email_prompted', '1')
     } catch {
-      setError('Could not send link. Try again.')
+      setError('We\'re still setting up email delivery — try again in a few hours.')
       setState('error')
     }
   }

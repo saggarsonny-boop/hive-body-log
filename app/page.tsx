@@ -175,7 +175,7 @@ function AccountSetupOverlay({ sessionId, onDone, onSkip }: { sessionId: string;
               >
                 {state === 'sending' ? 'Sending…' : 'Protect my story'}
               </button>
-              {state === 'error' && <p className="text-red-500 text-xs text-center">Could not send link. Try again.</p>}
+              {state === 'error' && <p className="text-amber-600 text-xs text-center">We&apos;re still setting up email delivery — try again in a few hours.</p>}
             </div>
 
             <button
