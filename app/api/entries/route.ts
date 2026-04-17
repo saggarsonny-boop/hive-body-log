@@ -61,8 +61,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ entry, ai_response: aiResponse })
   } catch (e) {
-    console.error('POST /api/entries:', e)
-    return NextResponse.json({ error: 'Failed to save entry' }, { status: 500 })
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('POST /api/entries:', msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
 
