@@ -32,20 +32,20 @@ export async function POST(req: NextRequest) {
     `
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://hivebodylog.hive.baby'
-    const link = `${appUrl}/auth/verify?token=${token}&session=${session_id}`
+    const link = `${appUrl}/api/auth/verify?token=${token}&session=${session_id}`
 
     await resend.emails.send({
-      from: 'HiveBodyLog <noreply@hive.baby>',
+      from: 'HiveBodyLog <hive@hive.baby>',
       to: email,
-      subject: 'Your HiveBodyLog recovery link',
+      subject: 'Your HiveBodyLog access link',
       html: `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:480px;margin:0 auto;padding:2rem;background:#fafaf9">
-          <div style="background:#fff;border-radius:0.75rem;padding:2rem;border:1px solid #e7e5e4">
-            <p style="margin:0 0 0.5rem;font-size:1.1rem;font-weight:700;color:#1c1917">Your health story recovery link</p>
-            <p style="margin:0 0 1.5rem;color:#78716c;font-size:0.95rem">Click below to access your health story on this device. Link expires in 1 hour.</p>
-            <a href="${link}" style="display:inline-block;padding:0.75rem 1.75rem;background:#0d9488;color:#fff;text-decoration:none;border-radius:0.5rem;font-weight:600;font-size:0.95rem">Open my health story</a>
-            <p style="margin:1.5rem 0 0;font-size:0.75rem;color:#a8a29e">If you didn't request this, you can safely ignore this email.</p>
-            <p style="margin:0.5rem 0 0;font-size:0.75rem;color:#a8a29e">HiveBodyLog · Free forever · No ads · No tracking</p>
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:480px;margin:0 auto;padding:2rem;background:#0c0a09">
+          <div style="background:#1c1917;border-radius:0.75rem;padding:2rem;border:1px solid #292524">
+            <p style="margin:0 0 0.25rem;font-size:1.1rem;font-weight:700;color:#f5f5f4">Your health story is protected</p>
+            <p style="margin:0 0 1.5rem;color:#78716c;font-size:0.9rem">Click below to access your health story. Link expires in 1 hour.</p>
+            <a href="${link}" style="display:inline-block;padding:0.75rem 1.75rem;background:#0f766e;color:#ccfbf1;text-decoration:none;border-radius:0.5rem;font-weight:600;font-size:0.95rem">Open my health story</a>
+            <p style="margin:1.5rem 0 0;font-size:0.75rem;color:#57534e">If you didn't request this, you can safely ignore this email.</p>
+            <p style="margin:0.5rem 0 0;font-size:0.75rem;color:#44403c">HiveBodyLog · No ads · No tracking · Free forever</p>
           </div>
         </div>
       `,

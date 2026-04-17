@@ -7,7 +7,6 @@ import AIResponseCard from '@/components/AIResponseCard'
 import LogView from '@/components/LogView'
 import TimelineView from '@/components/TimelineView'
 import PatternsView from '@/components/PatternsView'
-import AccountPrompt from '@/components/AccountPrompt'
 import HiveFooter from '@/components/HiveFooter'
 import TourGuide from '@/components/TourGuide'
 import type { Entry, Upload, AIEntryResponse } from '@/lib/types'
@@ -15,6 +14,7 @@ import { detectLang, getStrings, SUPPORTED_LANGS, type LangCode } from '@/lib/i1
 
 type Tab = 'log' | 'timeline' | 'patterns'
 type EntryMode = 'type' | 'upload' | 'photo'
+type AppStep = 'onboarding' | 'account_setup' | 'main'
 
 const CLINICIAN_TYPES = [
   'GP / Primary Care',
@@ -108,6 +108,89 @@ function AuthBanner() {
   )
 }
 
+function AccountSetupOverlay({ sessionId, onDone, onSkip }: { sessionId: string; onDone: (email: string) => void; onSkip: () => void }) {
+  const [email, setEmail] = useState('')
+  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+
+  async function handleProtect() {
+    if (!email.trim() || state === 'sending') return
+    setState('sending')
+    try {
+      const res = await fetch('/api/auth/send-magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), session_id: sessionId }),
+      })
+      if (!res.ok) throw new Error()
+      localStorage.setItem('hbl_email', email.trim())
+      localStorage.setItem('hbl_email_prompted', '1')
+      setState('sent')
+      setTimeout(() => onDone(email.trim()), 2000)
+    } catch {
+      setState('error')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#0c0a09]/95 flex items-center justify-center px-4">
+      <div className="bg-stone-900 border border-stone-800 rounded-2xl p-8 max-w-sm w-full shadow-2xl">
+        {state === 'sent' ? (
+          <div className="text-center">
+            <div className="w-12 h-12 bg-teal-900 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-stone-200 font-semibold text-lg mb-1">Your story is protected</p>
+            <p className="text-stone-500 text-sm">Check {email} for your access link.</p>
+          </div>
+        ) : (
+          <>
+            <div className="mb-6">
+              <div className="w-10 h-10 bg-stone-800 rounded-xl flex items-center justify-center mb-4">
+                <svg className="w-5 h-5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h2 className="text-stone-100 text-lg font-semibold mb-2">Your health story, protected</h2>
+              <p className="text-stone-400 text-sm leading-relaxed">
+                Add your email to keep your story safe across devices. No password. No tracking. Just a magic link.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <input
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleProtect() }}
+                autoFocus
+                className="w-full bg-stone-800 border border-stone-700 rounded-xl px-4 py-3 text-stone-200 placeholder-stone-600 outline-none focus:border-teal-700 text-sm transition-colors"
+              />
+              <button
+                onClick={handleProtect}
+                disabled={!email.trim() || state === 'sending'}
+                className="w-full py-3 bg-teal-700 text-teal-100 font-semibold rounded-xl disabled:opacity-40 hover:bg-teal-600 transition-colors text-sm"
+              >
+                {state === 'sending' ? 'Sending…' : 'Protect my story'}
+              </button>
+              {state === 'error' && <p className="text-red-500 text-xs text-center">Could not send link. Try again.</p>}
+            </div>
+
+            <button
+              onClick={onSkip}
+              className="w-full mt-3 text-xs text-stone-600 hover:text-stone-400 transition-colors py-1"
+            >
+              Skip for now — story saved to this device only
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function App() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [entries, setEntries] = useState<Entry[]>([])
@@ -125,8 +208,8 @@ function App() {
   const [showExportMenu, setShowExportMenu] = useState(false)
   const [lang, setLang] = useState<LangCode>('en')
   const [savedEmail, setSavedEmail] = useState<string | null>(null)
-  const [onboardingDone, setOnboardingDone] = useState(true)
-  const [showAccountAfterEntry, setShowAccountAfterEntry] = useState(false)
+  const [appStep, setAppStep] = useState<AppStep>('main')
+  const [showDeviceBanner, setShowDeviceBanner] = useState(false)
   const [reminderDue, setReminderDue] = useState<string | null>(null)
   const [showReminderPrompt, setShowReminderPrompt] = useState<string | null>(null)
   const [weekSummary, setWeekSummary] = useState<{ entryCount: number; uniqueDays: number; topTags: string[] } | null>(null)
@@ -150,9 +233,25 @@ function App() {
     let id = localStorage.getItem('hbl_session_id')
     if (!id) { id = crypto.randomUUID(); localStorage.setItem('hbl_session_id', id) }
     setSessionId(id)
-    setSavedEmail(localStorage.getItem('hbl_email'))
 
-    if (!localStorage.getItem('hbl_onboarded')) setOnboardingDone(false)
+    const em = localStorage.getItem('hbl_email')
+    setSavedEmail(em)
+
+    const onboarded = localStorage.getItem('hbl_onboarded')
+    const accountSetupSeen = localStorage.getItem('hbl_account_setup_seen')
+
+    if (!onboarded) {
+      setAppStep('onboarding')
+    } else if (!em && !accountSetupSeen) {
+      // Return visitor who never saw account setup
+      setAppStep('account_setup')
+      localStorage.setItem('hbl_account_setup_seen', '1')
+    } else {
+      setAppStep('main')
+      if (!em && typeof sessionStorage !== 'undefined' && !sessionStorage.getItem('hbl_banner_dismissed')) {
+        setShowDeviceBanner(true)
+      }
+    }
 
     const reminderAt = localStorage.getItem('hbl_reminder_at')
     if (reminderAt && Date.now() >= new Date(reminderAt).getTime()) {
@@ -189,8 +288,35 @@ function App() {
   }, [])
 
   function dismissOnboarding() {
-    setOnboardingDone(true)
     localStorage.setItem('hbl_onboarded', '1')
+    const em = localStorage.getItem('hbl_email')
+    if (!em) {
+      localStorage.setItem('hbl_account_setup_seen', '1')
+      setAppStep('account_setup')
+    } else {
+      setAppStep('main')
+    }
+  }
+
+  function handleAccountSetupDone(email: string) {
+    setSavedEmail(email)
+    setShowDeviceBanner(false)
+    setAppStep('main')
+  }
+
+  function handleAccountSetupSkip() {
+    setAppStep('main')
+    if (typeof sessionStorage !== 'undefined') {
+      // Don't dismiss banner — show it this session since they just skipped
+    }
+    setShowDeviceBanner(true)
+  }
+
+  function dismissBanner() {
+    setShowDeviceBanner(false)
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('hbl_banner_dismissed', '1')
+    }
   }
 
   function setReminder(label: string, hours: number) {
@@ -233,10 +359,6 @@ function App() {
         const data = await res.json()
         setLastResponse(data.ai_response)
         setEntries(prev => [data.entry, ...prev])
-        if (!localStorage.getItem('hbl_email') && !localStorage.getItem('hbl_email_prompted')) {
-          setShowAccountAfterEntry(true)
-          localStorage.setItem('hbl_email_prompted', '1')
-        }
         if (tags.includes('Medication')) {
           setShowReminderPrompt(text.slice(0, 60))
         }
@@ -323,8 +445,8 @@ function App() {
   return (
     <div className="min-h-screen bg-[#0c0a09]" dir={t.dir}>
 
-      {/* First-visit onboarding overlay */}
-      {!onboardingDone && (
+      {/* First-visit onboarding */}
+      {appStep === 'onboarding' && (
         <div className="fixed inset-0 z-50 bg-[#0c0a09]/95 flex items-center justify-center px-4">
           <div className="bg-stone-900 border border-stone-800 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
             <div className="text-4xl mb-4">🫀</div>
@@ -333,17 +455,20 @@ function App() {
               Your personal health story. Log anything — symptoms, medications, how you feel, what you ate.
               No diagnosis. No judgment. Just your story, over time.
             </p>
-            <p className="text-stone-700 text-xs mb-6">
-              This story belongs to this device. Add your email to take it anywhere.
-            </p>
-            <button
-              onClick={dismissOnboarding}
-              className="w-full py-3 bg-teal-700 text-teal-100 font-semibold rounded-xl hover:bg-teal-600 transition-colors"
-            >
+            <button onClick={dismissOnboarding} className="w-full py-3 bg-teal-700 text-teal-100 font-semibold rounded-xl hover:bg-teal-600 transition-colors">
               Start my story
             </button>
           </div>
         </div>
+      )}
+
+      {/* Account setup — shown after onboarding if no email */}
+      {appStep === 'account_setup' && sessionId && (
+        <AccountSetupOverlay
+          sessionId={sessionId}
+          onDone={handleAccountSetupDone}
+          onSkip={handleAccountSetupSkip}
+        />
       )}
 
       {/* Header */}
@@ -363,12 +488,23 @@ function App() {
             {SUPPORTED_LANGS.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
           </select>
 
+          {/* Account indicator */}
+          {savedEmail ? (
+            <a href="/account" className="flex items-center gap-1.5 text-xs text-stone-600 hover:text-stone-400 transition-colors border border-stone-800 rounded-lg px-2.5 py-1.5">
+              <div className="w-4 h-4 rounded-full bg-teal-900 flex items-center justify-center">
+                <span className="text-teal-400 text-[9px] font-semibold uppercase">{savedEmail[0]}</span>
+              </div>
+              <span className="max-w-[80px] truncate hidden sm:block">{savedEmail}</span>
+            </a>
+          ) : (
+            <a href="/login" className="text-xs text-stone-600 hover:text-teal-500 transition-colors">
+              Protect your story →
+            </a>
+          )}
+
           {entries.length > 0 && (
-            <button
-              onClick={createShareLink}
-              disabled={sharing}
-              className="text-xs text-stone-600 border border-stone-800 rounded-lg px-3 py-1.5 hover:text-stone-400 hover:border-stone-700 transition-colors"
-            >
+            <button onClick={createShareLink} disabled={sharing}
+              className="text-xs text-stone-600 border border-stone-800 rounded-lg px-3 py-1.5 hover:text-stone-400 hover:border-stone-700 transition-colors">
               {sharing ? '…' : shareCopied ? '✓ Copied' : 'Share'}
             </button>
           )}
@@ -386,14 +522,9 @@ function App() {
             {showExportMenu && (
               <div className="absolute right-0 top-full mt-1 bg-stone-900 border border-stone-800 rounded-xl shadow-xl z-30 min-w-[220px] py-1 overflow-hidden">
                 {CLINICIAN_TYPES.map(type => (
-                  <a
-                    key={type}
-                    href={`/export?s=${sessionId}&clinician=${encodeURIComponent(type)}`}
-                    target="_blank"
-                    rel="noopener"
-                    onClick={() => setShowExportMenu(false)}
-                    className="block px-4 py-2.5 text-sm text-stone-300 hover:bg-stone-800 hover:text-stone-100 transition-colors"
-                  >
+                  <a key={type} href={`/export?s=${sessionId}&clinician=${encodeURIComponent(type)}`}
+                    target="_blank" rel="noopener" onClick={() => setShowExportMenu(false)}
+                    className="block px-4 py-2.5 text-sm text-stone-300 hover:bg-stone-800 hover:text-stone-100 transition-colors">
                     {type}
                   </a>
                 ))}
@@ -405,30 +536,38 @@ function App() {
 
       <Suspense><AuthBanner /></Suspense>
 
+      {/* Device-only banner */}
+      {showDeviceBanner && !savedEmail && (
+        <div className="bg-stone-900 border-b border-amber-900/50 px-4 py-3 flex items-center gap-3 no-print">
+          <span className="text-amber-600 text-xs shrink-0">⚠</span>
+          <p className="text-xs text-stone-400 flex-1">
+            Your story is device-only.{' '}
+            <a href="/login" className="text-teal-500 hover:text-teal-400 transition-colors">Add email to protect it →</a>
+          </p>
+          <button onClick={dismissBanner} className="text-stone-700 text-base leading-none shrink-0">×</button>
+        </div>
+      )}
+
       {/* Reminder banner */}
       {reminderDue && (
         <div className="bg-amber-950 border-b border-amber-900 px-4 py-3 flex items-center gap-3 no-print">
-          <span className="text-xs text-amber-400">⏰ Time to log how you feel after {reminderDue}</span>
-          <button
-            onClick={() => { setActiveTab('log'); setEntryMode('type'); setReminderDue(null) }}
-            className="ml-auto text-xs text-amber-300 underline"
-          >Log now</button>
-          <button onClick={() => setReminderDue(null)} className="text-amber-800 text-base leading-none ml-2">×</button>
+          <span className="text-xs text-amber-400 flex-1">⏰ Time to log how you feel after {reminderDue}</span>
+          <button onClick={() => { setActiveTab('log'); setEntryMode('type'); setReminderDue(null) }}
+            className="text-xs text-amber-300 underline shrink-0">Log now</button>
+          <button onClick={() => setReminderDue(null)} className="text-amber-800 text-base leading-none ml-1">×</button>
         </div>
       )}
 
       <main className="max-w-2xl mx-auto px-4 py-5 space-y-3">
 
-        {/* Weekly summary card */}
+        {/* Weekly summary */}
         {showWeeklySummary && weekSummary && (
           <div className="bg-stone-900 border border-stone-800 rounded-2xl p-4 relative no-print">
             <button onClick={() => setShowWeeklySummary(false)} className="absolute top-3 right-3 text-stone-700 text-base leading-none">×</button>
             <p className="text-xs text-amber-600 font-semibold uppercase tracking-wider mb-1.5">Your health week</p>
             <p className="text-stone-300 text-sm">
               {weekSummary.entryCount} {weekSummary.entryCount === 1 ? 'entry' : 'entries'} across {weekSummary.uniqueDays} {weekSummary.uniqueDays === 1 ? 'day' : 'days'}.
-              {weekSummary.topTags.length > 0 && (
-                <> Most logged: <span className="text-teal-400">{weekSummary.topTags.join(', ')}</span>.</>
-              )}
+              {weekSummary.topTags.length > 0 && <> Most logged: <span className="text-teal-400">{weekSummary.topTags.join(', ')}</span>.</>}
             </p>
           </div>
         )}
@@ -444,21 +583,18 @@ function App() {
           </div>
         ))}
 
-        {/* Mode selector — large card-style buttons */}
+        {/* Mode selector */}
         <div id="mode-selector" className="grid grid-cols-3 gap-2">
           {(['type', 'upload', 'photo'] as EntryMode[]).map(mode => {
             const cfg = MODE_CONFIG[mode]
             const isActive = entryMode === mode
             return (
-              <button
-                key={mode}
-                onClick={() => setEntryMode(mode)}
+              <button key={mode} onClick={() => setEntryMode(mode)}
                 className={`flex flex-col items-center gap-2 py-4 px-2 rounded-2xl border transition-all text-center ${
                   isActive
                     ? 'bg-teal-950 border-teal-700 text-teal-300'
                     : 'bg-stone-900 border-stone-800 text-stone-500 hover:border-stone-700 hover:text-stone-400'
-                }`}
-              >
+                }`}>
                 <div className={isActive ? 'text-teal-400' : 'text-stone-600'}>{cfg.icon}</div>
                 <div>
                   <div className="text-sm font-semibold">{cfg.label}</div>
@@ -471,15 +607,12 @@ function App() {
 
         {/* Entry card */}
         <div className="bg-stone-900 rounded-2xl border border-stone-800 overflow-hidden">
-
-          {/* TYPE mode */}
           {entryMode === 'type' && (
             <div className="p-5">
               <EntryInput onSubmit={handleEntrySubmit} isSubmitting={isSubmitting} lang={lang} />
             </div>
           )}
 
-          {/* UPLOAD mode */}
           {entryMode === 'upload' && (
             <div className="p-5">
               <div
@@ -511,7 +644,6 @@ function App() {
             </div>
           )}
 
-          {/* PHOTO mode */}
           {entryMode === 'photo' && (
             <div className="p-5 space-y-4">
               <div className="flex flex-wrap gap-1.5">
@@ -522,7 +654,6 @@ function App() {
                     }`}>{pt}</button>
                 ))}
               </div>
-
               {!photoPreview ? (
                 <button onClick={() => photoInputRef.current?.click()}
                   className="w-full border-2 border-dashed border-stone-700 rounded-xl p-10 text-center hover:border-stone-600 transition-colors">
@@ -537,7 +668,6 @@ function App() {
                     className="absolute top-2 right-2 bg-stone-900/80 text-stone-300 rounded-full w-7 h-7 flex items-center justify-center text-sm">×</button>
                 </div>
               )}
-
               <input ref={photoInputRef} type="file" accept="image/*" capture="environment" className="hidden"
                 onChange={async e => {
                   const file = e.target.files?.[0]; if (!file) return
@@ -545,11 +675,9 @@ function App() {
                   setPhotoBase64(await compressImageFile(file))
                   e.target.value = ''
                 }} />
-
               <input value={photoNote} onChange={e => setPhotoNote(e.target.value)}
                 placeholder="Optional note about this photo…"
                 className="w-full bg-stone-800 border border-stone-700 rounded-xl px-4 py-2.5 text-sm text-stone-200 placeholder-stone-600 outline-none focus:border-teal-700" />
-
               <button onClick={handlePhotoSubmit} disabled={!photoBase64 || isSubmitting}
                 className="w-full py-2.5 bg-teal-700 text-teal-100 text-sm font-semibold rounded-xl disabled:opacity-30 hover:bg-teal-600 transition-colors">
                 {isSubmitting ? t.saving : t.saveCta}
@@ -558,7 +686,6 @@ function App() {
           )}
         </div>
 
-        {/* AI response card */}
         {lastResponse && <AIResponseCard response={lastResponse} onDismiss={() => setLastResponse(null)} />}
 
         {/* Medication reminder prompt */}
@@ -577,19 +704,6 @@ function App() {
           </div>
         )}
 
-        {/* Account prompt — shown after first entry */}
-        {showAccountAfterEntry && sessionId && (
-          <div className="no-print">
-            <AccountPrompt
-              sessionId={sessionId}
-              emailSaved={null}
-              autoOpen
-              firstEntryMessage="Want to access your story on other devices? Add your email — no password needed."
-              onDismiss={() => setShowAccountAfterEntry(false)}
-            />
-          </div>
-        )}
-
         {/* Share link display */}
         {shareLink && (
           <div className="bg-stone-900 border border-teal-900/40 rounded-xl px-4 py-3 flex items-center gap-3 no-print">
@@ -597,10 +711,8 @@ function App() {
               <p className="text-xs text-teal-400 font-medium mb-0.5">Read-only link · Expires in 7 days</p>
               <p className="text-xs text-stone-600 truncate">{shareLink}</p>
             </div>
-            <button
-              onClick={() => { navigator.clipboard.writeText(shareLink); setShareCopied(true); setTimeout(() => setShareCopied(false), 2000) }}
-              className="text-xs text-stone-500 border border-stone-800 rounded-lg px-2.5 py-1.5 hover:text-stone-300 transition-colors shrink-0"
-            >
+            <button onClick={() => { navigator.clipboard.writeText(shareLink); setShareCopied(true); setTimeout(() => setShareCopied(false), 2000) }}
+              className="text-xs text-stone-500 border border-stone-800 rounded-lg px-2.5 py-1.5 hover:text-stone-300 transition-colors shrink-0">
               {shareCopied ? '✓' : 'Copy'}
             </button>
             <button onClick={() => setShareLink(null)} className="text-stone-700 text-base leading-none">×</button>
@@ -622,8 +734,6 @@ function App() {
         {activeTab === 'log' && (
           <>
             <LogView entries={entries} uploads={uploads} />
-
-            {/* Coming soon */}
             <div className="mt-4 pt-6 border-t border-stone-900 no-print">
               <p className="text-xs text-stone-700 font-medium uppercase tracking-wider mb-3">Coming soon</p>
               <div className="grid grid-cols-2 gap-2">
@@ -650,7 +760,6 @@ function App() {
       </main>
 
       <HiveFooter />
-
       <TourGuide steps={TOUR_STEPS} tourKey="hbl_tour_done" />
     </div>
   )
