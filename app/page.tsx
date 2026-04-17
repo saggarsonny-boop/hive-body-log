@@ -9,6 +9,7 @@ import TimelineView from '@/components/TimelineView'
 import PatternsView from '@/components/PatternsView'
 import HiveFooter from '@/components/HiveFooter'
 import TourGuide from '@/components/TourGuide'
+import AutoDemo from '@/components/AutoDemo'
 import type { Entry, Upload, AIEntryResponse } from '@/lib/types'
 import { detectLang, getStrings, SUPPORTED_LANGS, type LangCode } from '@/lib/i18n'
 
@@ -450,6 +451,8 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#0c0a09]" dir={t.dir}>
+
+      <AutoDemo />
 
       {/* First-visit onboarding */}
       {appStep === 'onboarding' && (
