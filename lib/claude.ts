@@ -62,7 +62,7 @@ Rules: Never diagnose. Never suggest treatments. Never use alarming language. To
   }
 
   const response = await getClient().messages.create({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-sonnet-4-20250514',
     max_tokens: 1024,
     messages: [{ role: 'user', content }],
   })
@@ -83,7 +83,7 @@ export async function analyzePatterns(entries: Entry[]): Promise<PatternAnalysis
   }))
 
   const response = await getClient().messages.create({
-    model: 'claude-opus-4-5',
+    model: 'claude-sonnet-4-20250514',
     max_tokens: 2048,
     messages: [{
       role: 'user',
