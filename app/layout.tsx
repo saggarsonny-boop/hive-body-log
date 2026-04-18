@@ -11,13 +11,34 @@ export const metadata: Metadata = {
   },
 }
 
+const NAV_STYLE: React.CSSProperties = {
+  fontSize: '11px',
+  color: 'rgba(120,113,108,0.7)',
+  textDecoration: 'none',
+}
+
+const DOT: React.CSSProperties = {
+  fontSize: '11px',
+  color: 'rgba(120,113,108,0.3)',
+}
+
+function HiveNav() {
+  return (
+    <nav style={{ borderBottom: '1px solid rgba(28,25,23,0.8)', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <a href="https://hive.baby" style={{ fontSize: '11px', color: 'rgba(120,113,108,0.5)', textDecoration: 'none' }}>← hive.baby</a>
+      <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(245,245,244,0.6)', letterSpacing: '0.02em' }}>HiveBodyLog</span>
+      <a href="/login" style={{ fontSize: '11px', color: 'rgba(120,113,108,0.5)', textDecoration: 'none' }}>Sign in</a>
+    </nav>
+  )
+}
+
 function HiveFooter() {
   return (
-    <footer style={{ borderTop: "1px solid rgba(13,31,53,0.8)", padding: "20px 24px 28px", textAlign: "center" }}>
-      <p style={{ fontSize: "11px", color: "rgba(26,58,92,0.5)", marginBottom: "14px", letterSpacing: "0.05em" }}>
+    <footer style={{ borderTop: '1px solid rgba(28,25,23,0.8)', padding: '20px 24px 28px', textAlign: 'center' }}>
+      <p style={{ fontSize: '11px', color: 'rgba(120,113,108,0.4)', marginBottom: '14px', letterSpacing: '0.05em' }}>
         No ads. No investors. No agenda.
       </p>
-      <div style={{ display: "flex", gap: "14px", justifyContent: "center", flexWrap: "wrap" }}>
+      <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
         <a href="https://hive.baby/about" style={NAV_STYLE}>About</a>
         <span style={DOT}>·</span>
         <a href="https://hive.baby/contribute" style={NAV_STYLE}>Contribute</a>
@@ -27,7 +48,7 @@ function HiveFooter() {
         <a href="https://hive.baby/privacy" style={NAV_STYLE}>Privacy</a>
       </div>
     </footer>
-  );
+  )
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
