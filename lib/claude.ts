@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import type { AIEntryResponse, PatternAnalysis, Entry } from './types'
 
 function getClient() {
-  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? process.env.ANTHROPIC_API })
 }
 
 export async function processEntry(
