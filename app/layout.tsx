@@ -25,7 +25,7 @@ const DOT: React.CSSProperties = {
 function HiveNav() {
   return (
     <nav style={{ borderBottom: '1px solid rgba(28,25,23,0.8)', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <a href="https://hive.baby" style={{ fontSize: '11px', color: 'rgba(120,113,108,0.5)', textDecoration: 'none' }}>← hive.baby</a>
+      <a href="https://hive.baby" className="hive-planet" style={{ textDecoration: 'none', fontSize: '22px', lineHeight: '1' }}>🌍</a>
       <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(245,245,244,0.6)', letterSpacing: '0.02em' }}>HiveBodyLog</span>
       <a href="/login" style={{ fontSize: '11px', color: 'rgba(120,113,108,0.5)', textDecoration: 'none' }}>Sign in</a>
     </nav>
@@ -36,16 +36,14 @@ function HiveFooter() {
   return (
     <footer style={{ borderTop: '1px solid rgba(28,25,23,0.8)', padding: '20px 24px 28px', textAlign: 'center' }}>
       <p style={{ fontSize: '11px', color: 'rgba(120,113,108,0.4)', marginBottom: '14px', letterSpacing: '0.05em' }}>
-        No ads. No investors. No agenda.
+        Free forever. No ads. No investors. You are the investor.
       </p>
       <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
-        <a href="https://hive.baby/about" style={NAV_STYLE}>About</a>
+        <a href="https://hive.baby" style={NAV_STYLE}>hive.baby</a>
         <span style={DOT}>·</span>
-        <a href="https://hive.baby/contribute" style={NAV_STYLE}>Contribute</a>
+        <a href="https://hive.baby/patrons" style={NAV_STYLE}>Patronage</a>
         <span style={DOT}>·</span>
-        <a href="https://hive.baby/patrons" style={NAV_STYLE}>Patrons</a>
-        <span style={DOT}>·</span>
-        <a href="https://hive.baby/privacy" style={NAV_STYLE}>Privacy</a>
+        <a href="mailto:hive@hive.baby" style={NAV_STYLE}>Feedback</a>
       </div>
     </footer>
   )
