@@ -34,7 +34,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
   const data = await getShareData(token)
   if (!data) notFound()
 
-  const { entries, uploads, expires_at } = data
+  const { entries, uploads, expires_at, scope_text, salutation } = data
   const expiresDate = new Date(expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
   const combined = [
@@ -58,6 +58,19 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
           <p className="text-xs text-stone-600 mt-1.5">Shared health record — for clinical review only · Not a diagnosis</p>
         </div>
       </header>
+
+      {(salutation || scope_text) && (
+        <div className="max-w-2xl mx-auto px-4 pt-5">
+          <div className="bg-stone-900 border border-stone-800 rounded-xl p-4 space-y-1">
+            {salutation && <p className="text-stone-300 text-sm font-medium">{salutation},</p>}
+            {scope_text && (
+              <p className="text-stone-500 text-xs">
+                This record covers: <span className="italic text-stone-400">{scope_text}</span>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-3">
         {combined.length === 0 && (

@@ -29,19 +29,30 @@ export async function GET(req: NextRequest) {
 
   try {
     const links = await sql`
-      SELECT session_id, expires_at FROM share_links
+      SELECT session_id, expires_at, scope_text, entry_ids, salutation FROM share_links
       WHERE token = ${token} AND expires_at > now()
     `
     if (!links.length) return NextResponse.json({ error: 'Link expired or not found' }, { status: 404 })
 
-    const { session_id, expires_at } = links[0]
+    const { session_id, expires_at, scope_text, entry_ids, salutation } = links[0] as {
+      session_id: string; expires_at: string; scope_text: string | null;
+      entry_ids: string[] | null; salutation: string | null
+    }
+
+    const hasFilter = Array.isArray(entry_ids) && entry_ids.length > 0
 
     const [entries, uploads] = await Promise.all([
-      sql`
-        SELECT id, raw_text, summary, tags, intensity, time_of_day, created_at
-        FROM entries WHERE session_id = ${session_id}
-        ORDER BY created_at DESC LIMIT 50
-      `,
+      hasFilter
+        ? sql`
+            SELECT id, raw_text, summary, tags, intensity, time_of_day, created_at
+            FROM entries WHERE session_id = ${session_id} AND id = ANY(${entry_ids}::text[])
+            ORDER BY created_at DESC
+          `
+        : sql`
+            SELECT id, raw_text, summary, tags, intensity, time_of_day, created_at
+            FROM entries WHERE session_id = ${session_id}
+            ORDER BY created_at DESC LIMIT 50
+          `,
       sql`
         SELECT id, file_name, file_type, claude_summary, created_at
         FROM uploads WHERE session_id = ${session_id}
@@ -49,7 +60,7 @@ export async function GET(req: NextRequest) {
       `,
     ])
 
-    return NextResponse.json({ entries, uploads, expires_at })
+    return NextResponse.json({ entries, uploads, expires_at, scope_text, salutation })
   } catch (e) {
     console.error('GET /api/share:', e)
     return NextResponse.json({ error: 'Failed to fetch share data' }, { status: 500 })

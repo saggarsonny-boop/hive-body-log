@@ -10,6 +10,7 @@ import PatternsView from '@/components/PatternsView'
 import HiveFooter from '@/components/HiveFooter'
 import TourGuide from '@/components/TourGuide'
 import AutoDemo from '@/components/AutoDemo'
+import ShareModal from '@/components/ShareModal'
 import type { Entry, Upload, AIEntryResponse } from '@/lib/types'
 import { detectLang, getStrings, SUPPORTED_LANGS, type LangCode } from '@/lib/i18n'
 
@@ -224,6 +225,7 @@ function App() {
   const [shareLink, setShareLink] = useState<string | null>(null)
   const [sharing, setSharing] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const exportMenuRef = useRef<HTMLDivElement>(null)
@@ -516,9 +518,9 @@ function App() {
           )}
 
           {entries.length > 0 && (
-            <button onClick={createShareLink} disabled={sharing}
+            <button onClick={() => setShowShareModal(true)}
               className="text-xs text-stone-600 border border-stone-800 rounded-lg px-3 py-1.5 hover:text-stone-400 hover:border-stone-700 transition-colors">
-              {sharing ? '…' : shareCopied ? '✓ Copied' : 'Share'}
+              Share
             </button>
           )}
 
@@ -780,6 +782,9 @@ function App() {
 
       <HiveFooter />
       <TourGuide steps={TOUR_STEPS} tourKey="hbl_tour_done" />
+      {showShareModal && sessionId && (
+        <ShareModal sessionId={sessionId} onClose={() => setShowShareModal(false)} />
+      )}
     </div>
   )
 }
