@@ -1,9 +1,21 @@
 @import "tailwindcss";
 
+@theme {
+  --color-stone-100: #f1f5f9;
+  --color-stone-200: #e2e8f0;
+  --color-stone-300: #cbd5e1;
+  --color-stone-400: #94a3b8;
+  --color-stone-500: #64748b;
+  --color-stone-600: #475569;
+  --color-stone-700: #334155;
+  --color-stone-800: #1e293b;
+  --color-stone-900: #0f172a;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  background: #0c0a09;
-  color: #fafaf9;
+  background: #111827;
+  color: #e2e8f0;
 }
 
 /* Slider thumb dark */
