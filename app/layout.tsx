@@ -38,7 +38,7 @@ function HiveFooter() {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}<HiveFooter /></body>
+      <body className="antialiased"><HiveNav />{children}<HiveFooter /></body>
     </html>
   )
 }
