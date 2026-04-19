@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap');
 
 @theme {
   --color-stone-100: #f1f5f9;
@@ -36,4 +37,10 @@ input[type=range] {
 .hive-planet {
   animation: hive-planet-spin 12s linear infinite;
   display: inline-block;
+}
+
+:root {
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
 }
