@@ -10,6 +10,7 @@ import PatternsView from '@/components/PatternsView'
 import HiveFooter from '@/components/HiveFooter'
 import TourGuide from '@/components/TourGuide'
 import AutoDemo from '@/components/AutoDemo'
+import FirstVisitCard from '@/components/FirstVisitCard'
 import ShareModal from '@/components/ShareModal'
 import type { Entry, Upload, AIEntryResponse } from '@/lib/types'
 import { detectLang, getStrings, SUPPORTED_LANGS, type LangCode } from '@/lib/i18n'
@@ -459,6 +460,7 @@ function App() {
     <div className="min-h-screen bg-[#0c0a09]" dir={t.dir}>
 
       <AutoDemo />
+      <FirstVisitCard />
 
       {/* First-visit onboarding */}
       {appStep === 'onboarding' && (
