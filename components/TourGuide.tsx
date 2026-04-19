@@ -64,9 +64,21 @@ export default function TourGuide({ steps, tourKey }: Props) {
     localStorage.setItem(tourKey, '1')
   }
 
-  if (!active) return null
-
   const step = steps[stepIdx]
+
+  if (!active) return (
+    <button
+      onClick={() => { setStepIdx(0); setActive(true) }}
+      title="How to use this"
+      style={{
+        position: 'fixed', bottom: 24, left: 24, zIndex: 50,
+        background: 'rgba(28,20,14,0.9)', border: '1px solid rgba(217,119,6,0.3)',
+        borderRadius: 20, padding: '6px 11px', color: 'rgb(217,119,6,0.6)',
+        fontSize: 12, fontWeight: 700, cursor: 'pointer',
+        fontFamily: 'inherit', backdropFilter: 'blur(4px)', lineHeight: 1,
+      }}
+    >?</button>
+  )
 
   return (
     <>
