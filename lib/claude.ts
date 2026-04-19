@@ -10,9 +10,11 @@ export async function processEntry(
   tags: string[],
   intensity: number | null,
   timeOfDay: string | null,
-  supplementImageBase64: string | null
+  supplementImageBase64: string | null,
+  lang = 'en'
 ): Promise<AIEntryResponse> {
-  const basePrompt = `You are a calm, non-diagnostic health story assistant. A person has logged a health experience.
+  const langInstruction = lang !== 'en' ? `Respond in ${lang.toUpperCase()}. ` : ''
+  const basePrompt = `You are a calm, non-diagnostic health story assistant. ${langInstruction}A person has logged a health experience.
 
 Raw input: "${rawText}"
 Tags selected: ${tags.length > 0 ? tags.join(', ') : 'none'}

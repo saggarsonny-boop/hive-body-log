@@ -11,6 +11,7 @@ import HiveFooter from '@/components/HiveFooter'
 import TourGuide from '@/components/TourGuide'
 import AutoDemo from '@/components/AutoDemo'
 import FirstVisitCard from '@/components/FirstVisitCard'
+import LanguageSelector, { getLang } from '@/components/LanguageSelector'
 import ShareModal from '@/components/ShareModal'
 import type { Entry, Upload, AIEntryResponse } from '@/lib/types'
 import { detectLang, getStrings, SUPPORTED_LANGS, type LangCode } from '@/lib/i18n'
@@ -362,7 +363,7 @@ function App() {
     try {
       const res = await fetch('/api/entries', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId, raw_text: text, tags, intensity, time_of_day: timeOfDay, supplement_image: supplementImage }),
+        body: JSON.stringify({ session_id: sessionId, raw_text: text, tags, intensity, time_of_day: timeOfDay, supplement_image: supplementImage, lang: getLang() }),
       })
       if (res.ok) {
         const data = await res.json()
@@ -461,6 +462,7 @@ function App() {
 
       <AutoDemo />
       <FirstVisitCard />
+      <LanguageSelector />
 
       {/* First-visit onboarding */}
       {appStep === 'onboarding' && (

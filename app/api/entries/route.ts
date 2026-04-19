@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
       intensity = null,
       time_of_day = null,
       supplement_image = null,
+      lang = 'en',
     } = body
 
     if (!session_id || !raw_text?.trim()) {
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     await ensureSession(session_id)
 
-    const aiResponse = await processEntry(raw_text, tags, intensity, time_of_day, supplement_image)
+    const aiResponse = await processEntry(raw_text, tags, intensity, time_of_day, supplement_image, lang)
 
     const id = crypto.randomUUID()
 
