@@ -40,6 +40,8 @@ input[type=range] {
 }
 
 :root {
+  --hive-gold: #D4AF37;
+
   --font-display: 'Syne', sans-serif;
   --font-body: 'DM Sans', sans-serif;
   --font-mono: 'DM Mono', monospace;
